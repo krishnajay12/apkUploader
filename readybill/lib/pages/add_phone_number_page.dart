@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:readybill/components/api_constants.dart';
 import 'package:readybill/components/color_constants.dart';
 import 'package:readybill/components/country_selector_prefix.dart';
+import 'package:readybill/components/custom_components.dart';
 import 'package:readybill/components/resend_button.dart';
 import 'package:readybill/pages/add_password_page.dart';
 import 'package:readybill/pages/add_shop_details_page.dart';
@@ -41,19 +42,41 @@ class _AddPhoneNumberPageState extends State<AddPhoneNumberPage> {
       'country_code': Provider.of<CountryCodeProvider>(context, listen: false)
           .registerPageCountryCode
     });
+    print(response.body);
+    print(response.statusCode);
     var jsonData = jsonDecode(response.body);
 
-    if (jsonData['data']['data']['user_id'] == "") {
+    if (response.statusCode == 200 &&
+        jsonData['data']['data']['user_id'] == '') {
       showModalBottomSheet(
           context: context,
           builder: (context) => OtpModalBottomSheet(
                 sendOtp: sendOtp,
                 phoneNumber: mobileNumberController.text,
               ));
-    } else {
+    } else if (response.statusCode == 200 &&
+        jsonData['data']['data']['user_id'] != '') {
       navigatorKey.currentState?.push(CupertinoPageRoute(
           builder: (context) => AddShopDetailsPage(
               userID: jsonData['data']['data']['user_id'].toString())));
+    } else if (response.statusCode == 400) {
+      showDialog(
+          context: context,
+          builder: (context) => customAlertBox(
+                title: "Account already exists",
+                content:
+                    'Account with this phone number already exists. Please log in.',
+                actions: [
+                  customElevatedButton("Cancel", red, white, () {
+                    navigatorKey.currentState?.pop();
+                  }),
+                  customElevatedButton('Login', green2, white, () {
+                    navigatorKey.currentState?.pushReplacement(
+                        CupertinoPageRoute(
+                            builder: (context) => const LoginPage()));
+                  })
+                ],
+              ));
     }
   }
 
@@ -313,6 +336,7 @@ class _OtpModalBottomSheetState extends State<OtpModalBottomSheet> {
         body: {"mobile": widget.phoneNumber, "otp": otpController.text});
 
     print(response.statusCode);
+    print('response.body: ${response.body}');
 
     if (response.statusCode == 200) {
       Navigator.pop(context);

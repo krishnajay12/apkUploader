@@ -266,7 +266,7 @@ class _NewDatasetState extends State<NewDataset> {
       int index = entry.key;
       var item = entry.value;
       return ItemModel(
-        id: item['original_index'],
+        id: item['id'],
         itemName: item['item_name'] ?? '',
         quantity: item['quantity'] ?? '',
         minStockAlert: item['minimum_stock_alert'] ?? '',
@@ -301,13 +301,18 @@ class _NewDatasetState extends State<NewDataset> {
       required String token,
       required String apikey}) async {
     print('indexes: $indexes');
+    String url;
     EasyLoading.show(status: 'Deleting...');
-
+    if (widget.uploadExcel != null) {
+      url = '$baseUrl/upload-data/multiple-delete';
+    } else {
+      url = '$baseUrl/dataset/multiple-delete';
+    }
     String jsonBody = jsonEncode({'ids': indexes});
     print('Request body: $jsonBody');
 
     var response = await http.post(
-      Uri.parse('$baseUrl/dataset/multiple-delete'),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'auth-key': apikey,
@@ -394,8 +399,24 @@ class _NewDatasetState extends State<NewDataset> {
                     navigatorKey.currentState?.pop();
                   }),
                   customElevatedButton("Replace", blue, white, () {
-                    submitList('2');
                     navigatorKey.currentState?.pop();
+                    showDialog(
+                        context: context,
+                        builder: (context) => customAlertBox(
+                                title: 'Confirmation',
+                                content:
+                                    'This will replace your inventory data if any. If you have any existing data in your inventory, all data will be deleted and replaced with this new data',
+                                actions: [
+                                  customElevatedButton('NO', red, white, () {
+                                    navigatorKey.currentState?.pop();
+                                  }),
+                                  customElevatedButton('YES', green2, white,
+                                      () {
+                                    submitList('2');
+                                    navigatorKey.currentState?.pop();
+                                  })
+                                ]));
+                    // submitList('2');
                   }),
                 ],
               ),
@@ -828,6 +849,7 @@ class _NewDatasetState extends State<NewDataset> {
         'cess': newItem.cess,
       },
     );
+    print('Response: ${response.body}');
     EasyLoading.dismiss();
     if (response.statusCode == 200) {
       setState(() {
@@ -891,7 +913,7 @@ class _NewDatasetState extends State<NewDataset> {
                 }
               });
               for (var item in visibleSelectedItems) {
-                arr.add(item.id + 1);
+                arr.add(item.id);
               }
               print('arr: $arr');
               var response =
@@ -913,6 +935,10 @@ class _NewDatasetState extends State<NewDataset> {
                   ),
                   duration: Durations.extralong4,
                 ));
+                getItems(
+                    reset: '0',
+                    start: start.toString(),
+                    length: _rowsPerPage.toString());
               }
               Navigator.of(context).pop();
             },
@@ -1094,14 +1120,8 @@ class _NewDatasetState extends State<NewDataset> {
       );
     }
 
-    // Prepare API request
-    EasyLoading.show(status: 'loading...');
-    var response =
-        await http.post(Uri.parse('$baseUrl/update-cell-data'), headers: {
-      'Authorization': 'Bearer $token',
-      'auth-key': '$apiKey',
-    }, body: {
-      'id': (_filteredItems[filteredIndex].id + 1).toString(),
+    Map<String, String> requestBody = {
+      'id': _filteredItems[filteredIndex].id.toString(),
       'cell_index': cellIndex.toString(),
       'row_index': items.indexOf(_filteredItems[filteredIndex]).toString(),
       'item_name': _filteredItems[filteredIndex].itemName,
@@ -1113,13 +1133,34 @@ class _NewDatasetState extends State<NewDataset> {
       'hsn': _filteredItems[filteredIndex].hsn,
       'gst': _filteredItems[filteredIndex].gst,
       'cess': _filteredItems[filteredIndex].cess,
-    });
+    };
+
+    // Prepare API request
+    EasyLoading.show(status: 'loading...');
+    String url;
+    if (widget.uploadExcel != null) {
+      url = '$baseUrl/upload-data/update-cell-data';
+    } else {
+      url = '$baseUrl/update-cell-data';
+    }
+    if (widget.uploadExcel != null) {}
+    var response = await http.post(Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'auth-key': '$apiKey',
+        },
+        body: requestBody);
+    print(requestBody);
+    print(response.body);
     EasyLoading.dismiss();
 
     if (response.statusCode != 200) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update item: ${response.body}')),
       );
+    } else {
+      getItems(
+          reset: '0', start: start.toString(), length: _rowsPerPage.toString());
     }
   }
 

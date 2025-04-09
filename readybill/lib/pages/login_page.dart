@@ -12,6 +12,7 @@ import 'package:readybill/components/color_constants.dart';
 import 'package:readybill/components/country_selector_prefix.dart';
 import 'package:readybill/components/custom_components.dart';
 import 'package:readybill/pages/add_phone_number_page.dart';
+import 'package:readybill/pages/add_shop_details_page.dart';
 import 'package:readybill/pages/forgot_password_page.dart';
 import 'package:readybill/pages/home_page.dart';
 
@@ -448,7 +449,9 @@ class _LoginPageState extends State<LoginPage> {
       }),
     );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
+    print(response.statusCode);
+
+    if (response.statusCode == 200) {
       Timer.periodic(const Duration(seconds: 1), (timer) {
         _localDatabase.clearTable();
         _localDatabase.fetchDataAndStoreLocally();
@@ -461,9 +464,21 @@ class _LoginPageState extends State<LoginPage> {
       final Map<String, dynamic> responseData = json.decode(response.body);
 
       return responseData;
+    } else if (response.statusCode == 201) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      // print();
+
+      navigatorKey.currentState?.push(
+        CupertinoPageRoute(
+          builder: (context) => AddShopDetailsPage(
+            userID: responseData['data'][0]['user_id'].toString(),
+          ),
+        ),
+      );
+      return json.decode(response.body);
     } else {
       // Handle non-200 status codes
-      debugPrint('Failed to login. Status code: ${response.statusCode}');
+      print('Failed to login. Status code: ${response.statusCode}');
       // Prepare error response
       final Map<String, dynamic> errorResponse = {
         'status': 'failed',

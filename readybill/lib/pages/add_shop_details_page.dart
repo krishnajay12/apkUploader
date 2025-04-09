@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:readybill/components/api_constants.dart';
 import 'package:readybill/components/color_constants.dart';
 import 'package:http/http.dart' as http;
+import 'package:readybill/components/custom_components.dart';
 import 'package:readybill/pages/login_page.dart';
 import 'package:readybill/services/global_internet_connection_handler.dart';
 
@@ -261,14 +262,29 @@ class _AddShopDetailsPageState extends State<AddShopDetailsPage> {
               'gstin': gstinController.text,
               'terms_n_conditions': '1',
             });
+            print(response.body);
             EasyLoading.dismiss();
             if (response.statusCode == 200) {
               Fluttertoast.showToast(msg: 'Shop details added successfully');
-              navigatorKey.currentState?.pushReplacement(
-                CupertinoPageRoute(
-                  builder: (context) => const LoginPage(),
-                ),
-              );
+              showDialog(
+                  context: context,
+                  builder: (context) => customAlertBox(
+                        title: "Registration Successful",
+                        content:
+                            "You have successfully registered your account. Please log in now.",
+                        actions: [
+                          customElevatedButton('OK', green2, white, () {
+                            navigatorKey.currentState?.pushReplacement(
+                              CupertinoPageRoute(
+                                builder: (context) => const LoginPage(),
+                              ),
+                            );
+                          }),
+                          customElevatedButton('NO', red, white, () {
+                            navigatorKey.currentState?.pop();
+                          })
+                        ],
+                      ));
             } else {}
           }
         },
@@ -320,7 +336,7 @@ class _AddShopDetailsPageState extends State<AddShopDetailsPage> {
               top: screenHeight * 0.30,
               left: screenWidth * 0.1,
               child: const Text(
-                'Enter Phone Number',
+                'Enter Shop Details',
                 style: TextStyle(
                   fontSize: 35,
                   fontFamily: 'Roboto-Bold',
